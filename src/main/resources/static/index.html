@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Decathlon Digital Orders</title>
+    <style>
+        /* Global styles */
+        body {
+          margin: 0;
+          font-family: "Segoe UI", Tahoma, sans-serif;
+          background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+          background-size: 400% 400%;
+          animation: gradientBG 15s ease infinite;
+          color: #fff;
+          text-align: center;
+          padding: 15px 10px;
+        }
+
+        @keyframes gradientBG {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+
+        h1 {
+          font-size: 2em;
+          margin-bottom: 15px;
+          text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+        }
+
+        /* Search bar */
+        #searchContainer {
+          width: 90%;
+          max-width: 420px;
+          margin: 20px auto 25px auto;
+          display: flex;
+          align-items: center;
+          background: rgba(255,255,255,0.2);
+          border-radius: 25px;
+          padding: 0 15px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+          backdrop-filter: blur(8px);
+        }
+
+        #searchIcon {
+          font-size: 1.2em;
+          margin-right: 8px;
+          color: #fff;
+        }
+
+        #searchInput {
+          flex: 1;
+          padding: 10px;
+          border: none;
+          background: transparent;
+          color: #fff;
+          font-size: 1em;
+        }
+
+        #searchInput::placeholder { color: #f0f0f0; }
+        #searchInput:focus { outline: none; }
+
+        /* Admin button */
+        #adminBtn {
+          position: fixed;
+          top: 15px;
+          right: 15px;
+          background: #00c853;
+          border: none;
+          padding: 14px 16px;
+          border-radius: 50%;
+          cursor: pointer;
+          font-size: 20px;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+          z-index: 100;
+        }
+        #adminBtn:hover { background: #00e676; }
+
+        /* Teammates container */
+        .teammates-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 40px;
+          width: 100%;
+        }
+
+        .card {
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 12px;
+          padding: 10px;
+          width: 90%;
+          max-width: 420px;
+          box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          position: relative;
+          min-height: 70px; /* reduced height */
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
+
+        .card img {
+          border-radius: 50%;
+          border: 2px solid white;
+          width: 48px;   /* smaller image */
+          height: 48px;
+          flex-shrink: 0;
+        }
+
+        .info {
+          text-align: left;
+          flex-grow: 1;
+        }
+        .info h2 {
+          margin: 0;
+          font-size: 1em;  /* smaller name */
+        }
+        .daily, .monthly {
+          font-size: 13px; /* smaller text */
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin: 1px 0;
+        }
+
+        /* Update buttons (floating right) */
+        .update-controls {
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .update-btn {
+          background: #ffeb3b;
+          border: none;
+          border-radius: 50%;
+          width: 28px;
+          height: 28px;
+          cursor: pointer;
+          font-size: 16px;
+          font-weight: bold;
+          color: black;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.2s, background 0.2s;
+        }
+        .update-btn:hover {
+          transform: scale(1.15);
+          background: #ffc107;
+        }
+
+        /* Trophy icons */
+        .trophy {
+          position: absolute;
+          top: -10px;
+          right: -10px;
+          font-size: 26px;
+        }
+        .gold { color: gold; }
+        .silver { color: silver; }
+        .bronze { color: #cd7f32; }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+          h1 { font-size: 1.7em; }
+          .card { padding: 8px; min-height: 65px; }
+          .info h2 { font-size: 0.95em; }
+          .daily, .monthly { font-size: 12px; }
+          .card img { width: 42px; height: 42px; }
+          .update-btn { width: 26px; height: 26px; font-size: 15px; }
+          #searchContainer { width: 95%; max-width: none; }
+        }
+    </style>
+</head>
+<body>
+<h1>🏆 Decathlon Digital Orders Leaderboard</h1>
+
+<!-- Search bar -->
+<div id="searchContainer">
+    <span id="searchIcon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search by name or ID...">
+</div>
+
+<!-- Admin icon -->
+<button id="adminBtn">🛡️</button>
+
+<!-- Teammates container -->
+<div id="teammates" class="teammates-container"></div>
+
+<script>
+    let isAdmin = false;
+    let teammatesData = [];
+    const PASSKEY = "decathlon123";
+
+    // Admin login
+    document.getElementById("adminBtn").addEventListener("click", () => {
+      const input = prompt("Enter admin passkey:");
+      if (input === PASSKEY) {
+        isAdmin = true;
+        alert("✅ Admin mode activated");
+        fetchTeammates();
+      } else {
+        alert("❌ Wrong passkey");
+      }
+    });
+
+    // Fetch teammates from backend
+    async function fetchTeammates() {
+      try {
+        const res = await fetch("http://localhost:8080/api/teammates");
+        teammatesData = await res.json();
+        displayTeammates(teammatesData);
+      } catch (error) {
+        console.error("Error fetching teammates:", error);
+      }
+    }
+
+    // Display teammates
+    function displayTeammates(data) {
+      const container = document.getElementById("teammates");
+      container.innerHTML = "";
+      data.sort((a, b) => b.dailyOrders - a.dailyOrders);
+
+      data.forEach((t, index) => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        let trophy = "";
+        if (index === 0) trophy = `<span class="trophy gold">🏆</span>`;
+        else if (index === 1) trophy = `<span class="trophy silver">🥈</span>`;
+        else if (index === 2) trophy = `<span class="trophy bronze">🥉</span>`;
+
+        let dailyHTML = `<p class="daily">🔥 Daily Orders: ${t.dailyOrders}</p>`;
+        let monthlyHTML = `<p class="monthly">📅 Monthly Orders: ${t.monthlyOrders}</p>`;
+
+        let controls = "";
+        if (isAdmin) {
+          controls = `
+            <div class="update-controls">
+              <button class="update-btn" onclick="updateOrders(${t.id}, 1)">+</button>
+              <button class="update-btn" onclick="updateOrders(${t.id}, -1)">-</button>
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <img src="${t.photoUrl}" alt="${t.name}">
+          <div class="info">
+            <h2>${t.name}</h2>
+            ${dailyHTML}
+            ${monthlyHTML}
+          </div>
+          ${controls}
+          ${trophy}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Update orders
+    async function updateOrders(id, delta) {
+      try {
+        const teammate = await fetch(`http://localhost:8080/api/teammates/${id}`).then(r => r.json());
+        teammate.dailyOrders = Math.max(0, teammate.dailyOrders + delta);
+        teammate.monthlyOrders = Math.max(0, teammate.monthlyOrders + delta);
+
+        const res = await fetch(`http://localhost:8080/api/teammates/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(teammate)
+        });
+
+        if (res.ok) fetchTeammates();
+      } catch (e) {
+        console.error("Error updating:", e);
+      }
+    }
+
+    // Search functionality
+    document.getElementById("searchInput").addEventListener("input", e => {
+      const query = e.target.value.toLowerCase();
+      const filtered = teammatesData.filter(t =>
+        t.name.toLowerCase().includes(query) || t.id.toString() === query
+      );
+      displayTeammates(filtered);
+    });
+
+    // Initial fetch and refresh every 10s
+    fetchTeammates();
+    setInterval(fetchTeammates, 10000);
+</script>
+</body>
+</html>
